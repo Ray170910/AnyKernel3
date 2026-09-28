@@ -74,3 +74,28 @@ if [ -f "$AKHOME/kpn.zip" ]; then
 else
     ui_print "KP-N module Not Found, skipping KP-N module installation..."
 fi
+
+## 防砖保护 (abslot-tool): 刷入后对当前槽位清 successful_boot 并装填重试次数,
+## 新内核起不来时 preloader 自动切换到另一槽位的旧内核, 免拆机救砖。
+## abtool 二进制由 peek 构建工作流放进 tools/ (chmod -R 755 已统一赋权)。
+if [ -f "$AKHOME/tools/abtool" ]; then
+    AB_SLOT=$(getprop ro.boot.slot_suffix 2>/dev/null)
+    [ -z "$AB_SLOT" ] && AB_SLOT=$(grep -o 'androidboot.slot_suffix=[_ab]' /proc/cmdline | head -1 | cut -d= -f2)
+    [ -z "$AB_SLOT" ] && AB_SLOT=$(grep -o 'androidboot.slot=[ab]' /proc/cmdline | head -1 | cut -d= -f2)
+    case "$AB_SLOT" in
+        _a|a) AB_N=0 ;;
+        _b|b) AB_N=1 ;;
+        *) AB_N= ;;
+    esac
+    if [ -n "$AB_N" ]; then
+        ui_print "防砖保护: 对当前槽位($AB_SLOT)启用启动失败自动换槽..."
+        if "$AKHOME/tools/abtool" -p "$AB_N"; then
+            "$AKHOME/tools/abtool" -d | while IFS= read -r AB_L; do ui_print "  $AB_L"; done
+            ui_print "防砖保护已启用: 新内核若无法启动将自动回退另一槽位"
+        else
+            ui_print "警告: 防砖保护写入失败 (misc 布局不支持?), 安装继续"
+        fi
+    else
+        ui_print "警告: 无法确定当前槽位, 跳过防砖保护"
+    fi
+fi
