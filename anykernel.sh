@@ -80,7 +80,7 @@ fi
 ## abtool 二进制由 peek 构建工作流放进 tools/ (chmod -R 755 已统一赋权)。
 if [ -f "$AKHOME/tools/abtool" ]; then
     AB_SLOT=$(getprop ro.boot.slot_suffix 2>/dev/null)
-    [ -z "$AB_SLOT" ] && AB_SLOT=$(grep -o 'androidboot.slot_suffix=[_ab]' /proc/cmdline | head -1 | cut -d= -f2)
+    [ -z "$AB_SLOT" ] && AB_SLOT=$(grep -o 'androidboot.slot_suffix=_[ab]' /proc/cmdline | head -1 | cut -d= -f2)
     [ -z "$AB_SLOT" ] && AB_SLOT=$(grep -o 'androidboot.slot=[ab]' /proc/cmdline | head -1 | cut -d= -f2)
     case "$AB_SLOT" in
         _a|a) AB_N=0 ;;
