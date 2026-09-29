@@ -75,8 +75,10 @@ else
     ui_print "KP-N module Not Found, skipping KP-N module installation..."
 fi
 
-## 防砖保护 (abslot-tool): 刷入后对当前槽位清 successful_boot 并装填重试次数,
-## 新内核起不来时 preloader 自动切换到另一槽位的旧内核, 免拆机救砖。
+## 防砖保护 (abslot-tool): 刷入时先恢复 A/B 元数据(-r: 当前槽 15/tries7,
+## 另一槽 14/tries7), 再对当前槽清 successful_boot 并装填重试次数(-p)。
+## 恢复步骤避免上次保护期消耗的 tries 累积归零, 导致误换槽或另一槽兜底失效;
+## 新内核起不来时 preloader 自动切换到另一槽位, 免拆机救砖。
 ## abtool 二进制由 peek 构建工作流放进 tools/ (chmod -R 755 已统一赋权)。
 if [ -f "$AKHOME/tools/abtool" ]; then
     AB_SLOT=$(getprop ro.boot.slot_suffix 2>/dev/null)
@@ -88,7 +90,8 @@ if [ -f "$AKHOME/tools/abtool" ]; then
         *) AB_N= ;;
     esac
     if [ -n "$AB_N" ]; then
-        ui_print "防砖保护: 对当前槽位($AB_SLOT)启用启动失败自动换槽..."
+        ui_print "防砖保护: 恢复 A/B 元数据并对当前槽位($AB_SLOT)启用自动换槽..."
+        "$AKHOME/tools/abtool" -r "$AB_N"
         if "$AKHOME/tools/abtool" -p "$AB_N"; then
             "$AKHOME/tools/abtool" -d | while IFS= read -r AB_L; do ui_print "  $AB_L"; done
             ui_print "防砖保护已启用: 新内核若无法启动将自动回退另一槽位"
